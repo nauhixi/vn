@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>베트남 여행 시장 동향 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1f2937;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e6edf3;
+    --muted: #7d8590;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --vn-red: #da251d;
+    --vn-gold: #f5c518;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 0.5px solid var(--border2);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .flag {
+    width: 44px;
+    height: 30px;
+    background: var(--vn-red);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+
+  .flag::after {
+    content: '★';
+    color: var(--vn-gold);
+    font-size: 16px;
+  }
+
+  .title-block h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .title-block p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .year-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    padding: 4px;
+    border-radius: 8px;
+    border: 0.5px solid var(--border);
+  }
+
+  .tab {
+    padding: 6px 16px;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .tab.on {
+    background: var(--accent);
+    color: #0d1117;
+    font-weight: 600;
+  }
+
+  /* Metrics */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    transition: border-color 0.2s;
+  }
+
+  .metric:hover { border-color: var(--border2); }
+
+  .metric-icon {
+    font-size: 18px;
+    margin-bottom: 10px;
+    opacity: 0.7;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-size: 24px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .badge-g { background: rgba(63,185,80,0.15); color: var(--accent2); }
+  .badge-r { background: rgba(247,129,102,0.15); color: var(--accent3); }
+  .badge-n { background: rgba(255,255,255,0.07); color: var(--muted); }
+
+  /* Charts grid */
+  .chart-full {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .chart-half {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+  }
+
+  .ldot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  /* Purpose bars */
+  .pur-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .pur-label {
+    font-size: 12px;
+    color: var(--muted);
+    width: 70px;
+    flex-shrink: 0;
+  }
+
+  .pur-track {
+    flex: 1;
+    background: var(--surface2);
+    border-radius: 3px;
+    height: 16px;
+    overflow: hidden;
+  }
+
+  .pur-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+
+  .pur-pct {
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text);
+    width: 35px;
+    text-align: right;
+  }
+
+  /* Source list for better readability */
+  .source-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .source-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+
+  .source-name { color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .source-bar-wrap { flex: 1; margin: 0 10px; background: var(--surface2); border-radius: 2px; height: 6px; }
+  .source-bar { height: 100%; border-radius: 2px; }
+  .source-pct { font-family: 'IBM Plex Mono', monospace; color: var(--muted); min-width: 30px; text-align: right; }
+
+  footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 0.5px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="flag"></div>
+    <div class="title-block">
+      <h1>베트남 여행 시장 동향</h1>
+      <p>VIETNAM INBOUND TOURISM ANALYTICS · 국제 방문객 기준</p>
+    </div>
+  </div>
+  <div class="year-tabs">
+    <button class="tab" onclick="sy(2022)">2022</button>
+    <button class="tab" onclick="sy(2023)">2023</button>
+    <button class="tab on" onclick="sy(2024)">2024</button>
+  </div>
+</div>
+
+<div class="metrics" id="mbox"></div>
+
+<div class="chart-full">
+  <p class="section-label">월별 국제 방문객 추이 (만 명)</p>
+  <div class="legend" id="tleg"></div>
+  <div style="position:relative;width:100%;height:220px">
+    <canvas id="tc" role="img" aria-label="연도별 월별 방문객 추이"></canvas>
+  </div>
+</div>
+
+<div class="chart-row">
+  <div class="chart-half">
+    <p class="section-label">국가별 방문객 비중 (2024)</p>
+    <div id="srclist" class="source-block"></div>
+  </div>
+  <div class="chart-half">
+    <p class="section-label">인기 목적지 방문객 (만 명, 2024)</p>
+    <div style="position:relative;width:100%;height:230px">
+      <canvas id="dc" role="img" aria-label="2024 목적지별 방문객 수"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="chart-full">
+  <p class="section-label">여행 목적 비중</p>
+  <div id="pb"></div>
+</div>
+
+<footer>
+  <span>데이터 출처: 베트남 관광총국(VNAT), UNWTO · 추정치 포함</span>
+  <span>dashboard generated 2025.05</span>
+</footer>
+
+<script>
+const D = {
+  2022: {
+    v: 359, rev: 495, stay: 8.9, g: null,
+    m: [10,18,25,35,42,30,33,35,38,40,32,21],
+    src: {한국:26, 중국:15, 대만:9, 미국:8, 일본:7, 기타:35},
+    dst: {하노이:180, 호치민:220, 다낭:140, 푸꾸옥:80, 호이안:70, 하롱베이:60},
+    pur: {관광:62, 비즈니스:18, '방문·친척':12, 기타:8}
+  },
+  2023: {
+    v: 1260, rev: 678, stay: 9.1, g: 251,
+    m: [70,80,110,120,115,105,110,112,108,95,90,145],
+    src: {한국:30, 중국:18, 대만:8, 미국:9, 일본:7, 기타:28},
+    dst: {하노이:520, 호치민:680, 다낭:430, 푸꾸옥:280, 호이안:220, 하롱베이:190},
+    pur: {관광:65, 비즈니스:16, '방문·친척':11, 기타:8}
+  },
+  2024: {
+    v: 1750, rev: 910, stay: 9.4, g: 38.9,
+    m: [120,130,165,158,155,145,152,158,155,145,140,177],
+    src: {한국:28, 중국:22, 대만:8, 미국:10, 일본:7, 기타:25},
+    dst: {하노이:730, 호치민:910, 다낭:620, 푸꾸옥:400, 호이안:310, 하롱베이:280},
+    pur: {관광:67, 비즈니스:15, '방문·친척':10, 기타:8}
+  }
+};
+
+const LC = {2022:'#4b5563', 2023:'#3fb950', 2024:'#58a6ff'};
+const SC = {한국:'#58a6ff', 중국:'#f78166', 대만:'#3fb950', 미국:'#d2a8ff', 일본:'#f5c518', 기타:'#4b5563'};
+const PC = {관광:'#58a6ff', 비즈니스:'#d2a8ff', '방문·친척':'#3fb950', 기타:'#4b5563'};
+const ICONS = {'국제 방문객':'✈', '관광 수입':'💰', '평균 체류일':'🗓', '최대 유입국':'🏳'};
+
+let cy = 2024, tc, dc;
+
+function sy(y) {
+  cy = y;
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('on', [2022,2023,2024][i] === y));
+  rm(); up(); rp();
+}
+
+function rm() {
+  const d = D[cy], p = D[cy-1];
+  const vStr = d.v >= 1000 ? (d.v/100).toFixed(1) + '백만' : d.v + '만';
+  const gr = d.g !== null ? (d.g > 0 ? `▲ +${Math.round(d.g)}% YoY` : `▼`) : '기준연도';
+  const gUp = d.g === null || d.g > 0;
+  const rg = p ? Math.round((d.rev/p.rev-1)*100) : null;
+  const top = Object.entries(d.src).sort((a,b)=>b[1]-a[1])[0];
+
+  const items = [
+    {l:'국제 방문객', v:vStr, b:gr, cls:gUp?'badge-g':'badge-r'},
+    {l:'관광 수입', v:'$'+d.rev+'억', b:rg!==null?(rg>0?`▲ +${rg}%`:`▼ ${Math.abs(rg)}%`):'기준연도', cls:rg===null||rg>0?'badge-g':'badge-r'},
+    {l:'평균 체류일', v:d.stay+'일', b:p?(d.stay>=p.stay?`▲ +${(d.stay-p.stay).toFixed(1)}일`:`▼ ${(p.stay-d.stay).toFixed(1)}일`):'기준연도', cls:p?d.stay>=p.stay?'badge-g':'badge-r':'badge-n'},
+    {l:'최대 유입국', v:top[0], b:top[1]+'%', cls:'badge-n'}
+  ];
+
+  document.getElementById('mbox').innerHTML = items.map(it => `
+    <div class="metric">
+      <div class="metric-label">${it.l}</div>
+      <div class="metric-value">${it.v}</div>
+      <span class="badge ${it.cls}">${it.b}</span>
+    </div>`).join('');
+}
+
+function rt() {
+  const mos = ['1','2','3','4','5','6','7','8','9','10','11','12'].map(m=>m+'월');
+  const ds = [2022,2023,2024].map(y => ({
+    label: y+'년', data: D[y].m,
+    borderColor: LC[y],
+    backgroundColor: y===2024 ? LC[y]+'20' : 'transparent',
+    fill: y===2024,
+    tension: 0.4,
+    pointRadius: 3,
+    pointBackgroundColor: LC[y],
+    borderWidth: y===cy ? 2.5 : 1.5,
+    borderDash: y===2022 ? [5,3] : []
+  }));
+
+  document.getElementById('tleg').innerHTML = [2022,2023,2024].map(y =>
+    `<span><span class="ldot" style="background:${LC[y]}"></span>${y}년</span>`
+  ).join('');
+
+  if (tc) tc.destroy();
+  tc = new Chart(document.getElementById('tc'), {
+    type: 'line',
+    data: { labels: mos, datasets: ds },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}만 명` } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7d8590', font: { size: 11, family: "'IBM Plex Mono'" }, autoSkip: false, maxRotation: 0 } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7d8590', font: { size: 11, family: "'IBM Plex Mono'" }, callback: v => v + '만' } }
+      }
+    }
+  });
+}
+
+function rs() {
+  const src = D[2024].src;
+  const max = Math.max(...Object.values(src));
+  document.getElementById('srclist').innerHTML = Object.entries(src)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([k,v]) => `
+      <div class="source-row">
+        <span class="source-name"><span class="ldot" style="background:${SC[k]||'#555'}"></span>${k}</span>
+        <div class="source-bar-wrap"><div class="source-bar" style="width:${Math.round(v/max*100)}%;background:${SC[k]||'#555'}"></div></div>
+        <span class="source-pct">${v}%</span>
+      </div>`).join('');
+}
+
+function rd() {
+  const dst = D[2024].dst;
+  if (dc) dc.destroy();
+  dc = new Chart(document.getElementById('dc'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(dst),
+      datasets: [{
+        data: Object.values(dst),
+        backgroundColor: ['#58a6ff','#3fb950','#d2a8ff','#f78166','#f5c518','#79c0ff'],
+        borderRadius: 4, borderWidth: 0
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x}만 명` } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7d8590', font: { size: 11, family: "'IBM Plex Mono'" }, callback: v => v+'만' } },
+        y: { grid: { display: false }, ticks: { color: '#e6edf3', font: { size: 12 } } }
+      }
+    }
+  });
+}
+
+function rp() {
+  const d = D[cy].pur;
+  document.getElementById('pb').innerHTML = Object.entries(d).map(([k,v]) => `
+    <div class="pur-row">
+      <span class="pur-label">${k}</span>
+      <div class="pur-track"><div class="pur-fill" style="width:${v}%;background:${PC[k]||'#555'}"></div></div>
+      <span class="pur-pct">${v}%</span>
+    </div>`).join('');
+}
+
+function up() {
+  if (!tc) return;
+  tc.data.datasets.forEach(ds => { ds.borderWidth = ds.label.startsWith(String(cy)) ? 2.5 : 1.5; });
+  tc.update();
+}
+
+rm(); rt(); rs(); rd(); rp();
+</script>
+</body>
+</html>
