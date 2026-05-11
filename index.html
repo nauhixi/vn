@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>베트남 여행 시장 · 노선 RM 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--bg:#0d1117;--s1:#161b22;--s2:#1f2937;--s3:#273344;--b1:rgba(255,255,255,0.07);--b2:rgba(255,255,255,0.14);--tx:#e6edf3;--mu:#7d8590;--blue:#58a6ff;--green:#3fb950;--red:#f78166;--purple:#d2a8ff;--gold:#f5c518;--teal:#39c5cf;--orange:#ffa657}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;padding:1.5rem 2rem;font-size:14px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:0.5px solid var(--b2)}
+.hdr-left{display:flex;align-items:center;gap:.75rem}
+.flag{width:40px;height:27px;background:#da251d;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#f5c518;font-size:15px;flex-shrink:0}
+.hdr h1{font-size:18px;font-weight:600;letter-spacing:-.3px}
+.hdr p{font-size:11px;color:var(--mu);margin-top:2px}
+.hdr-right{display:flex;gap:8px;align-items:center}
+.view-tabs{display:flex;background:var(--s1);border:0.5px solid var(--b2);border-radius:8px;overflow:hidden}
+.vtab{padding:7px 18px;font-size:13px;border:none;background:transparent;color:var(--mu);cursor:pointer;transition:all .15s;white-space:nowrap}
+.vtab.on{background:var(--blue);color:#0d1117;font-weight:600}
+.year-tabs{display:flex;gap:3px;background:var(--s1);padding:3px;border-radius:7px;border:0.5px solid var(--b1)}
+.ytab{padding:5px 11px;font-size:12px;border:none;border-radius:5px;cursor:pointer;background:transparent;color:var(--mu);transition:all .15s;white-space:nowrap}
+.ytab.on{background:var(--s3);color:var(--tx);font-weight:500}
+.view{display:none}.view.on{display:block}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
+.metric{background:var(--s1);border:0.5px solid var(--b1);border-radius:10px;padding:14px 16px}
+.mlabel{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.mval{font-size:22px;font-weight:600;margin-bottom:5px}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px}
+.bg{background:rgba(63,185,80,.15);color:var(--green)}
+.br{background:rgba(247,129,102,.15);color:var(--red)}
+.bn{background:rgba(255,255,255,.07);color:var(--mu)}
+.bb{background:rgba(88,166,255,.15);color:var(--blue)}
+.ba{background:rgba(245,197,24,.15);color:var(--gold)}
+/* data quality badges */
+.dq{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:4px;vertical-align:middle}
+.dq-r{background:rgba(63,185,80,.12);color:#3fb950}
+.dq-e{background:rgba(245,197,24,.12);color:#f5c518}
+.dq-p{background:rgba(88,166,255,.12);color:#58a6ff}
+.card{background:var(--s1);border:0.5px solid var(--b1);border-radius:10px;padding:1.25rem;margin-bottom:1.1rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.1rem}
+.slabel{font-size:10px;font-weight:600;color:var(--mu);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.9rem}
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
+.leg span{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--mu)}
+.ldot{width:10px;height:10px;border-radius:2px;display:inline-block}
+.route-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.1rem}
+.rcard{background:var(--s1);border:0.5px solid var(--b1);border-radius:10px;padding:14px 16px}
+.rcard-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.route-tag{font-size:14px;font-weight:700;letter-spacing:.04em}
+.rcard-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rstat{background:var(--s2);border-radius:6px;padding:8px 10px}
+.rstat-label{font-size:10px;color:var(--mu);margin-bottom:3px}
+.rstat-val{font-size:15px;font-weight:600}
+.lf-bar-wrap{width:100%;background:rgba(255,255,255,.08);border-radius:3px;height:7px;margin-top:5px;overflow:hidden}
+.lf-bar{height:100%;border-radius:3px}
+.heatmap{width:100%;border-collapse:collapse;font-size:11px}
+.heatmap th{padding:5px 4px;color:var(--mu);font-weight:400;text-align:center;white-space:nowrap;font-size:10px}
+.heatmap th.rh{text-align:left;padding-right:6px}
+.heatmap td{padding:5px 4px;text-align:center;border-radius:3px;font-size:11px;font-weight:600}
+.bw-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bw-label{font-size:11px;color:var(--mu);width:65px;flex-shrink:0;text-align:right}
+.bw-track{flex:1;background:var(--s2);border-radius:3px;height:14px;overflow:hidden}
+.bw-fill{height:100%;border-radius:3px}
+.bw-pct{font-size:11px;font-weight:500;width:30px;text-align:right}
+.fc-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.fc-label{font-size:11px;color:var(--mu);width:85px;flex-shrink:0}
+.fc-track{flex:1;background:var(--s2);border-radius:3px;height:14px;overflow:hidden;display:flex}
+.bep-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.bep-route{font-size:12px;font-weight:700;width:70px;flex-shrink:0}
+.bep-track{flex:1;position:relative;height:22px;background:var(--s2);border-radius:4px;overflow:hidden}
+.bep-actual{height:100%;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:700}
+.bep-line{position:absolute;top:0;height:100%;width:2px;background:var(--red);opacity:.9}
+.bep-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--mu);margin-top:2px}
+.src-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.src-name{font-size:12px;color:var(--tx);width:50px;flex-shrink:0;display:flex;align-items:center;gap:5px}
+.src-track{flex:1;background:var(--s2);border-radius:2px;height:7px;overflow:hidden}
+.src-bar{height:100%;border-radius:2px}
+.src-pct{font-size:11px;width:32px;text-align:right;color:var(--mu)}
+.pur-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pur-label{font-size:12px;color:var(--mu);width:70px;flex-shrink:0}
+.pur-track{flex:1;background:var(--s2);border-radius:3px;height:16px;overflow:hidden}
+.pur-fill{height:100%;border-radius:3px}
+.pur-pct{font-size:11px;font-weight:500;width:30px;text-align:right}
+.dv{height:0.5px;background:var(--b2);margin:12px 0}
+/* alert banner */
+.alert-bar{background:rgba(245,197,24,.08);border:0.5px solid rgba(245,197,24,.25);border-radius:8px;padding:8px 14px;margin-bottom:1.1rem;font-size:12px;color:var(--gold);display:flex;align-items:center;gap:8px}
+/* source note */
+.src-note{font-size:10px;color:var(--mu);margin-top:6px}
+footer{margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--b1);font-size:10px;color:var(--mu);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="flag">★</div>
+    <div>
+      <h1>베트남 여행 시장 · 노선 RM 대시보드</h1>
+      <p>VIETNAM INBOUND TOURISM &amp; ROUTE REVENUE MANAGEMENT · VNAT / 베트남 통계청(GSO) 공식 데이터 기반</p>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="view-tabs">
+      <button class="vtab on" onclick="setView('market')">시장 개요</button>
+      <button class="vtab" onclick="setView('route')">노선 RM 분석</button>
+    </div>
+    <div class="year-tabs" id="ytabs">
+      <button class="ytab" onclick="sy(2023)">2023</button>
+      <button class="ytab" onclick="sy(2024)">2024</button>
+      <button class="ytab on" onclick="sy(2025)">2025</button>
+      <button class="ytab" onclick="sy(2026)">2026 ▸Q1</button>
+    </div>
+  </div>
+</div>
+
+<!-- 시장 개요 -->
+<div id="view-market" class="view on">
+  <div id="alert-box"></div>
+  <div class="metrics" id="mbox"></div>
+  <div class="card">
+    <p class="slabel">월별 국제 방문객 추이 (만 명)
+      <span class="dq dq-r">● 실측</span>
+      <span class="dq dq-e">● 추정</span>
+      <span class="dq dq-p">● 부분실측</span>
+    </p>
+    <div class="leg" id="tleg"></div>
+    <div style="position:relative;width:100%;height:220px"><canvas id="tc" role="img" aria-label="월별 방문객 추이"></canvas></div>
+    <p class="src-note">출처: 베트남 통계청(GSO) · VNAT 공식 발표 / 2025년 Dec·추정 포함 / 2026년 Jan~Mar 실측, 이후 미집계</p>
+  </div>
+  <div class="row2">
+    <div class="card" style="margin:0">
+      <p class="slabel">출발국 비중 <span id="src-year-label"></span></p>
+      <div id="srclist" style="margin-top:6px"></div>
+      <p class="src-note" id="src-note"></p>
+    </div>
+    <div class="card" style="margin:0">
+      <p class="slabel">인기 목적지 방문객 (만 명, 2024 기준)</p>
+      <div style="position:relative;width:100%;height:220px"><canvas id="dc" role="img" aria-label="목적지별 방문객"></canvas></div>
+      <p class="src-note">출처: VNAT 지역별 통계 추정</p>
+    </div>
+  </div>
+  <div class="card">
+    <p class="slabel">여행 목적 비중</p>
+    <div id="pb"></div>
+  </div>
+</div>
+
+<!-- 노선 RM 분석 -->
+<div id="view-route" class="view">
+  <div class="alert-bar">⚠ 노선 데이터(LF%, Yield, RASK)는 airportal.go.kr 실데이터 교체 전까지 추정치입니다. 시장 개요 데이터는 GSO/VNAT 실측 반영.</div>
+
+  <div class="route-cards" id="rcards"></div>
+  <div class="row2">
+    <div class="card" style="margin:0">
+      <p class="slabel">월별 탑승률 LF% (2024)</p>
+      <div class="leg" id="lfleg"></div>
+      <div style="position:relative;width:100%;height:195px"><canvas id="lfc" role="img" aria-label="노선별 탑승률"></canvas></div>
+    </div>
+    <div class="card" style="margin:0">
+      <p class="slabel">월별 평균 운임 Yield (천원, 2024)</p>
+      <div class="leg" id="yleg"></div>
+      <div style="position:relative;width:100%;height:195px"><canvas id="yc" role="img" aria-label="노선별 운임 추이"></canvas></div>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="card" style="margin:0">
+      <p class="slabel">시즌별 탑승률 히트맵 (%)</p>
+      <div style="overflow-x:auto"><table class="heatmap" id="htmap"></table></div>
+    </div>
+    <div class="card" style="margin:0">
+      <p class="slabel">BEP vs 실제 탑승률</p>
+      <div id="beprows"></div>
+      <p style="font-size:10px;color:var(--mu);margin-top:6px">빨간 선 = 손익분기점(BEP) · 초과분 = 수익 기여분</p>
+    </div>
+  </div>
+  <div class="row2">
+    <div class="card" style="margin:0">
+      <p class="slabel">예약 리드타임 분포 (Booking Window · ICN/CXR)</p>
+      <div id="bwbar"></div>
+      <div class="dv"></div>
+      <p class="slabel">운임 클래스 믹스 (Fare Class Mix)</p>
+      <div class="leg" id="fcleg" style="margin-bottom:10px"></div>
+      <div id="fcbars"></div>
+    </div>
+    <div class="card" style="margin:0">
+      <p class="slabel">분기별 RASK 추이 (원/ASK)</p>
+      <div class="leg" id="raskleg"></div>
+      <div style="position:relative;width:100%;height:170px"><canvas id="raskc" role="img" aria-label="RASK 추이"></canvas></div>
+      <div class="dv"></div>
+      <p class="slabel">노선별 매출 기여 비중</p>
+      <div style="position:relative;width:100%;height:140px"><canvas id="revc" role="img" aria-label="매출 기여 도넛"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>데이터 출처: 베트남 통계청(GSO) · VNAT · 여행신문 · 굿모닝베트남미디어 · TradingEconomics</span>
+  <span>노선 LF/Yield/RASK는 airportal.go.kr 교체 전 추정치 · 업데이트 2025.05</span>
+</footer>
+
+<script>
+/* ============ REAL DATA ============
+   출처별 신뢰도:
+   ✓ = GSO/VNAT 공식 실측
+   ~ = 실측 기반 추정
+   ? = 추정
+*/
+const MKT = {
+  2023: {
+    v: 1260, rev: 678, stay: 9.1, g: 251,
+    quality: 'real',
+    note: 'GSO 공식 실측',
+    m: [70,80,110,120,115,105,110,112,108,95,90,145], // ~추정
+    mq: 'est',
+    src: {한국:24, 중국:15, 대만:6, 미국:4, 일본:4, 기타:47},
+    sqNote: 'VNAT 추정',
+    dst: {하노이:520, 호치민:680, 다낭:430, 푸꾸옥:280, 호이안:220, 하롱베이:190},
+    pur: {관광:65, 비즈니스:16, '방문·친척':11, 기타:8}
+  },
+  2024: {
+    v: 1760, rev: 910, stay: 9.4, g: 39.5,
+    quality: 'real',
+    note: 'GSO 공식 실측 (여행신문 2025.01.19)',
+    m: [120,130,165,158,155,145,152,158,155,145,140,177], // ~추정 (연간총계 실측)
+    mq: 'est',
+    // 실측: 한국 457만(26%), 중국 374만(21%), 대만 128만(7%), 미국 78만(4%), 일본 71만(4%)
+    src: {한국:26, 중국:21, 대만:7, 미국:4, 일본:4, 기타:38},
+    sqNote: 'GSO 공식 실측 — 한국 457만·중국 374만·대만 128만',
+    dst: {하노이:730, 호치민:910, 다낭:620, 푸꾸옥:400, 호이안:310, 하롱베이:280},
+    pur: {관광:67, 비즈니스:15, '방문·친척':10, 기타:8}
+  },
+  2025: {
+    // 1~11월 실측: 1,910만+ (GSO 2025.12.06)
+    // 연간추정: ~2,100만 (12월 ~190만 추정)
+    v: 2103, rev: 1090, stay: 9.5, g: 19.5,
+    quality: 'partial',
+    note: '1~11월 실측 1,910만+(GSO) · 12월 추정 포함 / 연간 목표 2,200~2,500만',
+    // Jan~Nov 실측 근거:
+    // 상반기 1,070만(GSO), Aug 168만, Oct 173만(역대최고), Nov 198만
+    // Jun 146만 확인, Jul = Jun×1.068 = 156만
+    m: [195, 178, 190, 185, 176, 146, 157, 168, 147, 173, 198, 190],
+    //    Jan  Feb  Mar  Apr  May  Jun✓ Jul~ Aug✓ Sep~  Oct✓ Nov✓ Dec~
+    mq: 'partial', // Jun/Aug/Oct/Nov 실측, 나머지 추정
+    // 2025 1~8월 실측: 중국 25.4%(1위), 한국 20.9%(2위)
+    src: {중국:25, 한국:21, 대만:6, 미국:4, 일본:4, 기타:40},
+    sqNote: 'GSO 2025.09 실측 — 중국 1위 탈환, 한국 2위 / 1~8월 기준',
+    dst: {하노이:820, 호치민:1020, 다낭:700, 푸꾸옥:460, 호이안:360, 하롱베이:320},
+    pur: {관광:68, 비즈니스:14, '방문·친척':10, 기타:8}
+  },
+  2026: {
+    // Q1 실측: 676만 (YoY +12.4%) — TradingEconomics / GSO
+    // Jan 245만(+18.5%), Feb 222.8만(+17.7%), Mar 208만(+1.3%)
+    // 3월 둔화: 연료비↑, 항공사 운영 축소 / 한국발 -5.3%
+    v: 676, rev: null, stay: null, g: 12.4,
+    quality: 'q1only',
+    note: 'Q1(1~3월) 실측 676만(GSO) · 이후 미집계 · 3월 한국발 -5.3% 주의',
+    m: [245, 223, 208, null, null, null, null, null, null, null, null, null],
+    mq: 'real',
+    src: {중국:22, 한국:21, 일본:8, 말레이시아:6, 미국:5, 기타:38},
+    sqNote: 'Q1 실측 기반 추정 — 3월 중국 -23.5%, 한국 -5.3% (YoY)',
+    dst: {하노이:280, 호치민:360, 다낭:250, 푸꾸옥:160, 호이안:120, 하롱베이:100},
+    pur: {관광:67, 비즈니스:15, '방문·친척':10, 기타:8}
+  }
+};
+
+const RT = {
+  'ICN/CXR': {color:'#58a6ff', freq:'주 14회', seats:350, annualPax:121, lf:82, yield:182, bep:71, rev_share:58,
+    lf_m:[85,82,78,76,75,80,88,90,82,78,76,88],
+    yield_m:[195,185,175,172,170,178,195,205,182,174,170,198], rask:[68,71,74,72]},
+  'PUS/CXR': {color:'#3fb950', freq:'주 5회',  seats:180, annualPax:28,  lf:79, yield:196, bep:68, rev_share:22,
+    lf_m:[82,79,74,72,70,75,85,87,79,74,72,85],
+    yield_m:[208,198,188,185,182,190,208,218,195,187,183,210], rask:[62,65,68,66]},
+  'CJJ/CXR': {color:'#d2a8ff', freq:'주 4회',  seats:189, annualPax:18,  lf:88, yield:214, bep:74, rev_share:20,
+    lf_m:[90,88,82,78,72,76,92,94,85,80,75,91],
+    yield_m:[225,215,205,198,192,200,225,238,210,200,195,228], rask:[71,74,78,75]}
+};
+
+const BW=[{l:'0~7일',p:8,c:'#f78166'},{l:'8~14일',p:12,c:'#ffa657'},{l:'15~30일',p:22,c:'#f5c518'},{l:'31~60일',p:30,c:'#3fb950'},{l:'61~90일',p:18,c:'#58a6ff'},{l:'91일+',p:10,c:'#d2a8ff'}];
+const FC=[{n:'Y 정상',c:'#f78166',v:{ICN:5,PUS:4,CJJ:6}},{n:'B/M 유연',c:'#ffa657',v:{ICN:15,PUS:12,CJJ:18}},{n:'H/K/Q 표준',c:'#3fb950',v:{ICN:35,PUS:33,CJJ:38}},{n:'L/V/T 할인',c:'#58a6ff',v:{ICN:30,PUS:32,CJJ:28}},{n:'프로모',c:'#d2a8ff',v:{ICN:15,PUS:19,CJJ:10}}];
+const MOS=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const YC={2023:'#4b5563', 2024:'#3fb950', 2025:'#58a6ff', 2026:'#ffa657'};
+const SC={한국:'#58a6ff', 중국:'#f78166', 대만:'#3fb950', 미국:'#d2a8ff', 일본:'#f5c518', 기타:'#4b5563', 말레이시아:'#39c5cf'};
+const PC={관광:'#58a6ff', 비즈니스:'#d2a8ff', '방문·친척':'#3fb950', 기타:'#4b5563'};
+
+let cy=2025, tc, dc, lfc, yc2, raskc, revc, routeDone=false;
+
+/* ====== VIEW TOGGLE ====== */
+function setView(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('on'));
+  document.getElementById('view-'+v).classList.add('on');
+  document.querySelectorAll('.vtab').forEach((t,i)=>t.classList.toggle('on',['market','route'][i]===v));
+  document.getElementById('ytabs').style.display=v==='market'?'flex':'none';
+  if(v==='route'&&!routeDone){renderRoute();routeDone=true;}
+}
+
+function sy(y){
+  cy=y;
+  document.querySelectorAll('.ytab').forEach((t,i)=>t.classList.toggle('on',[2023,2024,2025,2026][i]===y));
+  rm(); upT(); rp(); rSrc();
+}
+
+/* ====== ALERT BOX ====== */
+function renderAlert(){
+  const d=MKT[cy];
+  const qMap={real:'',partial:'⚡ 일부 추정 포함',q1only:'📊 Q1(1~3월) 실측만 집계됨 — 이후 미발표',est:''};
+  const msg=qMap[d.quality]||'';
+  document.getElementById('alert-box').innerHTML=msg?`<div class="alert-bar">${msg} · ${d.note}</div>`:'';
+}
+
+/* ====== METRICS ====== */
+function rm(){
+  renderAlert();
+  const d=MKT[cy],p=MKT[cy-1];
+  const isQ1=d.quality==='q1only';
+  const vs=isQ1?d.v+'만 (Q1)':d.v>=1000?(d.v/100).toFixed(1)+'백만':d.v+'만';
+  const gb=d.g!=null?(d.g>0?'▲ +'+d.g.toFixed(1)+'% YoY':'▼ '+Math.abs(d.g).toFixed(1)+'%'):'기준연도';
+  const rg=p&&p.rev&&d.rev?Math.round((d.rev/p.rev-1)*100):null;
+  const top=Object.entries(MKT[cy].src).sort((a,b)=>b[1]-a[1])[0];
+  const qBadge=d.quality==='real'?'<span class="dq dq-r">실측</span>':d.quality==='partial'?'<span class="dq dq-e">부분실측</span>':'<span class="dq dq-p">Q1</span>';
+  const items=[
+    {l:'국제 방문객',v:vs+(isQ1?'':d.v>=1000?' 명':'만 명'),b:gb+' '+qBadge,cls:d.g==null||d.g>0?'bg':'br'},
+    {l:'관광 수입',v:d.rev?'$'+d.rev+'억':'미집계',b:rg!=null?(rg>0?'▲ +'+rg+'%':'▼ '+Math.abs(rg)+'%'):(d.rev?'추정':'-'),cls:rg==null||rg>0?'bg':'bn'},
+    {l:'평균 체류일',v:d.stay?d.stay+'일':'미집계',b:p&&p.stay&&d.stay?(d.stay>=p.stay?'▲ +'+((d.stay-p.stay).toFixed(1))+'일':'▼ '+(( p.stay-d.stay).toFixed(1))+'일'):'추정',cls:p&&d.stay?d.stay>=p.stay?'bg':'br':'bn'},
+    {l:'최대 유입국',v:top[0],b:top[1]+'%',cls:'bb'}
+  ];
+  document.getElementById('mbox').innerHTML=items.map(i=>`<div class="metric"><div class="mlabel">${i.l}</div><div class="mval">${i.v}</div><span class="badge ${i.cls}">${i.b}</span></div>`).join('');
+}
+
+/* ====== TREND CHART ====== */
+function rTrend(){
+  const years=[2023,2024,2025,2026];
+  const ds=years.map(y=>{
+    const raw=MKT[y].m;
+    const data=raw.map(v=>v==null?NaN:v);
+    const isDashed=MKT[y].mq==='est';
+    return {
+      label:y+(y===2026?' (Q1실측)':'년'),
+      data,
+      borderColor:YC[y],
+      backgroundColor:y===cy?YC[y]+'22':'transparent',
+      fill:y===cy&&y!==2026,
+      tension:.4,
+      pointRadius:raw.map(v=>v==null?0:3),
+      pointBackgroundColor:YC[y],
+      borderWidth:y===cy?2.5:1.5,
+      borderDash:isDashed?[5,3]:[]
+    };
+  });
+  document.getElementById('tleg').innerHTML=years.map(y=>
+    `<span><span class="ldot" style="background:${YC[y]}${y===cy?'':'88'}"></span>${y===2026?'2026(Q1)':y+'년'}${MKT[y].mq==='est'?' - - ':''}</span>`
+  ).join('');
+  if(tc)tc.destroy();
+  tc=new Chart(document.getElementById('tc'),{
+    type:'line',
+    data:{labels:MOS,datasets:ds},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      spanGaps:false,
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,
+        callbacks:{label:ctx=>isNaN(ctx.parsed.y)?null:` ${ctx.dataset.label}: ${ctx.parsed.y}만 명`}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7d8590',font:{size:10},autoSkip:false,maxRotation:0}},
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7d8590',font:{size:10},callback:v=>v+'만'}}
+      }
+    }
+  });
+}
+
+function upT(){
+  if(!tc)return;
+  tc.data.datasets.forEach(ds=>{const y=parseInt(ds.label);ds.borderWidth=y===cy?2.5:1.5;});
+  tc.update();
+}
+
+/* ====== DEST ====== */
+function rDest(){
+  if(dc)dc.destroy();
+  const dst=MKT[2024].dst;
+  dc=new Chart(document.getElementById('dc'),{type:'bar',data:{labels:Object.keys(dst),datasets:[{data:Object.values(dst),backgroundColor:['#58a6ff','#3fb950','#d2a8ff','#f78166','#f5c518','#39c5cf'],borderRadius:4,borderWidth:0}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.parsed.x}만 명`}}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7d8590',font:{size:10},callback:v=>v+'만'}},y:{grid:{display:false},ticks:{color:'#e6edf3',font:{size:11}}}}}});
+}
+
+/* ====== SOURCE ====== */
+function rSrc(){
+  const d=MKT[cy];
+  document.getElementById('src-year-label').innerHTML=`<span class="dq ${d.quality==='real'?'dq-r':d.quality==='partial'?'dq-e':'dq-p'}">${cy}년 ${d.quality==='q1only'?'Q1':''}</span>`;
+  document.getElementById('src-note').textContent='출처: '+d.sqNote;
+  const src=d.src, mx=Math.max(...Object.values(src));
+  document.getElementById('srclist').innerHTML=Object.entries(src).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+    <div class="src-row">
+      <span class="src-name"><span class="ldot" style="background:${SC[k]||'#555'}"></span>${k}</span>
+      <div class="src-track"><div class="src-bar" style="width:${Math.round(v/mx*100)}%;background:${SC[k]||'#555'}"></div></div>
+      <span class="src-pct">${v}%</span>
+    </div>`).join('');
+}
+
+/* ====== PURPOSE ====== */
+function rp(){
+  const d=MKT[cy].pur;
+  document.getElementById('pb').innerHTML=Object.entries(d).map(([k,v])=>
+    `<div class="pur-row"><span class="pur-label">${k}</span><div class="pur-track"><div class="pur-fill" style="width:${v}%;background:${PC[k]||'#555'}"></div></div><span class="pur-pct">${v}%</span></div>`
+  ).join('');
+}
+
+/* ====== ROUTE RM ====== */
+function renderRoute(){
+  // KPI Cards
+  document.getElementById('rcards').innerHTML=Object.entries(RT).map(([nm,r])=>{
+    const lfc2=r.lf>=85?'#3fb950':r.lf>=75?'#f5c518':'#f78166';
+    return `<div class="rcard"><div class="rcard-hdr"><span class="route-tag" style="color:${r.color}">${nm}</span><span class="badge bb">${r.freq}</span></div><div class="rcard-grid"><div class="rstat"><div class="rstat-label">연간 여객</div><div class="rstat-val" style="color:${r.color}">${r.annualPax}만 명</div></div><div class="rstat"><div class="rstat-label">평균 운임</div><div class="rstat-val">₩${r.yield}K</div></div><div class="rstat" style="grid-column:1/-1"><div class="rstat-label" style="display:flex;justify-content:space-between"><span>평균 탑승률 LF</span><span style="color:${lfc2};font-weight:700">${r.lf}%</span></div><div class="lf-bar-wrap"><div class="lf-bar" style="width:${r.lf}%;background:${lfc2}"></div></div></div></div></div>`;
+  }).join('');
+
+  // LF trend
+  const lfds=Object.entries(RT).map(([nm,r])=>({label:nm,data:r.lf_m,borderColor:r.color,backgroundColor:r.color+'15',fill:false,tension:.4,pointRadius:3,pointBackgroundColor:r.color,borderWidth:2}));
+  document.getElementById('lfleg').innerHTML=Object.entries(RT).map(([n,r])=>`<span><span class="ldot" style="background:${r.color}"></span>${n}</span>`).join('');
+  if(lfc)lfc.destroy();
+  lfc=new Chart(document.getElementById('lfc'),{type:'line',data:{labels:MOS,datasets:lfds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y}%`}}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7d8590',font:{size:10},autoSkip:false,maxRotation:0}},y:{min:60,max:100,grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7d8590',font:{size:10},callback:v=>v+'%'}}}}});
+
+  // Yield trend
+  const yds=Object.entries(RT).map(([nm,r])=>({label:nm,data:r.yield_m,borderColor:r.color,fill:false,tension:.4,pointRadius:3,pointBackgroundColor:r.color,borderWidth:2}));
+  document.getElementById('yleg').innerHTML=Object.entries(RT).map(([n,r])=>`<span><span class="ldot" style="background:${r.color}"></span>${n}</span>`).join('');
+  if(yc2)yc2.destroy();
+  yc2=new Chart(document.getElementById('yc'),{type:'line',data:{labels:MOS,datasets:yds},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ₩${ctx.parsed.y}K`}}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7d8590',font:{size:10},autoSkip:false,maxRotation:0}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7d8590',font:{size:10},callback:v=>'₩'+v+'K'}}}}});
+
+  // Heatmap
+  function hc(v){return v>=90?{bg:'#1a3a2a',tx:'#3fb950'}:v>=85?{bg:'#1a2f30',tx:'#39c5cf'}:v>=80?{bg:'#1a2a40',tx:'#58a6ff'}:v>=75?{bg:'#2a2a18',tx:'#f5c518'}:v>=70?{bg:'#2a1f10',tx:'#ffa657'}:{bg:'#2a1a1a',tx:'#f78166'};}
+  let ht=`<thead><tr><th class="rh">노선</th>${MOS.map(m=>`<th>${m}</th>`).join('')}</tr></thead><tbody>`;
+  Object.entries(RT).forEach(([nm,r])=>{ht+=`<tr><td style="text-align:left;font-size:11px;font-weight:700;color:${r.color};padding-right:8px;white-space:nowrap">${nm}</td>${r.lf_m.map(v=>{const c=hc(v);return`<td style="background:${c.bg};color:${c.tx}">${v}</td>`}).join('')}</tr>`;});
+  document.getElementById('htmap').innerHTML=ht+'</tbody>';
+
+  // BEP
+  document.getElementById('beprows').innerHTML=Object.entries(RT).map(([nm,r])=>{
+    const sp=r.lf-r.bep;
+    return `<div class="bep-row"><span class="bep-route" style="color:${r.color}">${nm}</span><div style="flex:1"><div class="bep-track"><div class="bep-actual" style="width:${r.lf}%;background:${r.color}30;color:${r.color}">${r.lf}%</div><div class="bep-line" style="left:${r.bep}%"></div></div><div class="bep-labels"><span>0%</span><span style="color:#f78166">BEP ${r.bep}%</span><span>100%</span></div></div><span class="badge ${sp>0?'bg':'br'}" style="flex-shrink:0;margin-left:6px">${sp>0?'+':''}${sp}%p</span></div>`;
+  }).join('');
+
+  // Booking Window
+  const bwMax=Math.max(...BW.map(b=>b.p));
+  document.getElementById('bwbar').innerHTML=BW.map(b=>`<div class="bw-row"><span class="bw-label">${b.l}</span><div class="bw-track"><div class="bw-fill" style="width:${Math.round(b.p/bwMax*100)}%;background:${b.c}"></div></div><span class="bw-pct" style="color:${b.c}">${b.p}%</span></div>`).join('');
+
+  // Fare Mix
+  document.getElementById('fcleg').innerHTML=FC.map(f=>`<span><span class="ldot" style="background:${f.c}"></span><span style="font-size:10px">${f.n}</span></span>`).join('');
+  document.getElementById('fcbars').innerHTML=[['ICN/CXR','ICN'],['PUS/CXR','PUS'],['CJJ/CXR','CJJ']].map(([nm,k])=>`<div class="fc-row"><span class="fc-label">${nm}</span><div class="fc-track">${FC.map(f=>`<div style="width:${f.v[k]}%;background:${f.c};height:100%" title="${f.n}: ${f.v[k]}%"></div>`).join('')}</div></div>`).join('');
+
+  // RASK
+  const raskDs=Object.entries(RT).map(([nm,r])=>({label:nm,data:r.rask,backgroundColor:r.color+'99',borderColor:r.color,borderWidth:1,borderRadius:4}));
+  document.getElementById('raskleg').innerHTML=Object.entries(RT).map(([n,r])=>`<span><span class="ldot" style="background:${r.color}"></span>${n}</span>`).join('');
+  if(raskc)raskc.destroy();
+  raskc=new Chart(document.getElementById('raskc'),{type:'bar',data:{labels:['Q1','Q2','Q3','Q4'],datasets:raskDs},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y}원`}}},scales:{x:{grid:{display:false},ticks:{color:'#7d8590',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7d8590',font:{size:10},callback:v=>v+'원'}}}}});
+
+  // Rev Share
+  if(revc)revc.destroy();
+  revc=new Chart(document.getElementById('revc'),{type:'doughnut',data:{labels:Object.keys(RT),datasets:[{data:Object.values(RT).map(r=>r.rev_share),backgroundColor:Object.values(RT).map(r=>r.color),borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:true,position:'right',labels:{color:'#7d8590',font:{size:11},boxWidth:11,padding:10}},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed}%`}}}}});
+}
+
+/* ====== INIT ====== */
+rm(); rTrend(); rDest(); rSrc(); rp();
+</script>
+</body>
+</html>
